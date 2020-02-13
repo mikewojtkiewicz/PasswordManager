@@ -1,3 +1,5 @@
+import sys
+import subprocess
 from config.config import Config
 from data.data import Data
 import pandas as pd
@@ -97,9 +99,10 @@ class Methods:
                 print(f"*** {name} ***")
                 print(f"UID - {username.decode()}")
                 print(f"PWD - {password.decode()}")
-                print("")
+                print("--------------------------")
                 print("Notes:")
                 print(f"{notes.decode()}")
+                print("--------------------------")
                 print("")
         if passwords_found == 0:
             print(f"'{user_input}' not found!")
@@ -117,6 +120,7 @@ class Methods:
         for name in data:
             if password_name.lower() == name.lower():
                 password_stored = data[name]['password'].encode()
+                notes_stored = data[name]['notes'].encode()
                 current_password = f.decrypt(password_stored)
                 print(f"Current Password: {current_password.decode()}")
                 password_input = input("New Password: ")
@@ -124,7 +128,8 @@ class Methods:
 
                 password = password_input.encode()
                 password_stored = f.encrypt(password)
-                data[str(name)] = {"username": str(username_stored.decode()), "password": str(password_stored.decode())}
+                data[str(name)] = {"username": str(username_stored.decode()), "password": str(password_stored.decode()),
+                                   "notes": notes_stored.decode()}
 
         d.Update(data)
 
@@ -173,24 +178,38 @@ class Methods:
         if store_input.lower() == 'y':
             name = input("Enter Name/Site: ")
             username_provided = input("Enter Username: ")
+            print("Notes: ")
+            notes = []
+            while True:
+                note_line = input("\t> ")
+                if note_line:
+                    notes.append(note_line)
+                else:
+                    break
+            notes_text_provided = '\n'.join(notes)
 
             username = username_provided.encode()
             password = new_password.encode()
+            note = notes_text_provided.encode()
 
             config = Config()
             f = config.GetKey()
 
             username_stored = f.encrypt(username)
             password_stored = f.encrypt(password)
+            notes_stored = f.encrypt(note)
 
             d = Data()
             data = d.Fetch()
 
-            data[str(name)] = {"username": str(username_stored.decode()), "password": str(password_stored.decode())}
+            data[str(name)] = {"username": str(username_stored.decode()), "password": str(password_stored.decode()),
+                               "notes": notes_stored.decode()}
 
             d.Update(data)
 
             print(f"{name} stored!")
+            subprocess.Popen(['clip'], stdin=subprocess.PIPE).communicate(password)
+            print(f"{name} password copied to clipboard")
 
     @staticmethod
     def get_password():
@@ -221,5 +240,8 @@ class Methods:
                 print("Notes:")
                 print(f"{notes.decode()}")
                 print("")
+
+                subprocess.Popen(['clip'], stdin=subprocess.PIPE).communicate(password)
+                print(f"{name} password copied to clipboard")
         if passwords_found == 0:
             print(f"{user_input} not found!")
